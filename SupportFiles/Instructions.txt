@@ -1,0 +1,40 @@
+az account set --subscription xxxx
+
+az group create -n rg-demo-appmod01
+
+az sql server create --admin-password Password@01 --admin-user sqladmin --name sqlsvr-demo-appmod01 --resource-group rg-demo-appmod01
+
+az sql db create --name sqldb-emp --resource-group rg-demo-appmod01 --server sqlsvr-demo-appmod01
+
+az sql db show-connection-string --client ado.net --auth-type SqlPassword --name sqldb-emp --server sqlsvr-demo-appmod01
+
+"Server=tcp:sqlsvr-demo-appmod01.database.windows.net,1433;Database=sqldb-emp;User ID=sqladmin;Password=Password@01;Encrypt=true;Connection Timeout=30;"
+
+ .\UpdateDB.ps1 -connectionString "Server=tcp:sqlsvr-demo-appmod01.database.win
+dows.net,1433;Database=sqldb-emp;User ID=sqladmin;Password=Password@01;Encrypt=true;Connection Timeout=30;" -scri
+ptFileName DBScript.sql
+
+az sql server firewall-rule create --name chamindaIP --resource-group rg-demo-appmod01 --server sqlsvr-demo-appmod01 --start-ip-address 121.6.44.110 --end-ip-address 121.6.44.110
+
+az sql server firewall-rule create --name AllowAzureSvc --resource-group rg-demo-appmod01 --server sqlsvr-demo-appmod01 --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
+
+az acr create --name acrdemoappmod01 --resource-group rg-demo-appmod01 --sku Basic --location EastUS --admin-enabled true
+
+mkdir appmod01
+cd appmod01
+
+git clone https://github.com/chamindac/Asp.Net-Core-MVC-CRUD-with-EF-Core.git
+
+cd Asp.Net-Core-MVC-CRUD-with-EF-Core/Asp.netCoreMVCCRUD/Asp.netCoreMVCCRUD
+
+az acr build --registry acrdemoappmod01 --image empapp:v1 .
+
+
+az appservice plan create --name azpln-appmod01 --resource-group rg-demo-appmod01 --is-linux --location EastUS --sku P1V2
+
+az webapp create --resource-group rg-demo-appmod01 --plan azpln-appmod01 --name webapp-appmod01 -i acrdemoappmod01.azurecr.io/empapp:v1
+
+
+
+
+"DevConnection": "Server=(localdb)\\MSSQLLocalDB;Database=EmployeeDB;Trusted_Connection=True;MultipleActiveResultSets=True;"
